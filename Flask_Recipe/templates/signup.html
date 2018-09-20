@@ -7,19 +7,59 @@
           <legend class="border-bottom mb-4">Sign up</legend>
           <div class="form-group">
             {{ form.username.label(class="form-control-label") }}
-            {{ form.username(class="form-control form-control-lg") }}
+
+            {% if form.username.errors %}
+              {{ form.username(class="form-control form-control-lg is-invalid")}}
+              <div class ="invalid-feedback">
+                {% for error in form.username.errors %}
+                  <span>{{ error }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              {{ form.username(class="form-control form-control-lg") }}
+            {% endif %}
           </div>
           <div class="form-group">
             {{ form.email.label(class="form-control-label") }}
-            {{ form.email(class="form-control form-control-lg") }}
+
+            {% if form.email.errors %}
+              {{ form.email(class="form-control form-control-lg is-invalid")}}
+              <div class ="invalid-feedback">
+                {% for error in form.email.errors %}
+                  <span>{{ error }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              {{ form.email(class="form-control form-control-lg") }}
+            {% endif %}
           </div>
           <div class="form-group">
             {{ form.password.label(class="form-control-label") }}
-            {{ form.password(class="form-control form-control-lg") }}
+
+            {% if form.password.errors %}
+              {{ form.password(class="form-control form-control-lg is-invalid")}}
+              <div class ="invalid-feedback">
+                {% for error in form.password.errors %}
+                  <span>{{ error }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              {{ form.password(class="form-control form-control-lg") }}
+            {% endif %}
           </div>
           <div class="form-group">
             {{ form.reenter.label(class="form-control-label") }}
-            {{ form.reenter(class="form-control form-control-lg") }}
+
+            {% if form.reenter.errors %}
+              {{ form.reenter(class="form-control form-control-lg is-invalid")}}
+              <div class ="invalid-feedback">
+                {% for error in form.reenter.errors %}
+                  <span>{{ error }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              {{ form.reenter(class="form-control form-control-lg") }}
+            {% endif %}
           </div>
       </fieldset>
       <div class="form-group">
