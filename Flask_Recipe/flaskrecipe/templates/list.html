@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="content-section">
+  <legend class="border-bottom mb-4">Grocery List</legend>
+  <ul>
+    {% for item in items %}
+        <li>
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+        </li>
+    {% endfor %}
+  </ul>
+  <form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <fieldset class="form-group">
+        <div class="form-group">
+          {{ form.recipe_url.label(class="form-control-label") }}
+          {{ form.recipe_url(class="form-control form-control-lg") }}
+        </div>
+    </fieldset>
+    <div class="form-group">
+      {{ form.submit(class="btn btn-outline-info") }}
+    </div>
+  </form>
+
+</div>
+
+
+
+{% endblock content%}

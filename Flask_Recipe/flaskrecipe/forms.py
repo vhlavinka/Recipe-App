@@ -8,7 +8,6 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=5,max=20)])
     reenter = PasswordField('Re-enter password', validators=[DataRequired(), EqualTo('password')])
-
     submit = SubmitField('Sign up')
 
     def validate_username(self, username):
@@ -25,10 +24,12 @@ class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember me')
-
     submit = SubmitField('Sign in')
+
+class NewListForm(FlaskForm):
+    list_title = StringField('List Name', validators=[DataRequired()])
+    submit = SubmitField('Create List')
 
 class EnterRecipe(FlaskForm):
     recipe_url = StringField('Recipe URL', validators=[DataRequired()])
-
     submit = SubmitField('Get Ingredients')
