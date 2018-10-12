@@ -104,102 +104,60 @@ def list(list_id):
 
     # BEGIN RECIPE WEB SCRAPING
     if form.validate_on_submit and request.method == 'POST':
-        # Method 1
         try:
             url = form.recipe_url.data
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
             r = requests.get(url, headers = headers)
             soup = BeautifulSoup(r.text,'html5lib')
+            title = soup.title.string
 
-            # store title of recipe
-            #title = soup.title.string
-            #recipe_data = Recipe(name="nametest",instructions="url")
-            #db.session.add(Recipe(name='nametest', instructions='url'))
-            #db.session.commit()
+            ld_json = soup.find("script", {"type" : "application/ld+json"}) # METHOD 1: parse for JSON-LD
 
-            # parse for JSON-LD
-            getJSON = soup.find("script", {"type" : "application/ld+json"})
+            if ld_json is not None:
+                # if recipeIngredient not found in first block of script, then search next
+                failsafe = 0;
+                while "recipeIngredient" not in str(ld_json) and failsafe < 10:
+                    ld_json = ld_json.findNext("script", {"type": "application/ld+json"})
+                    failsafe = failsafe + 1 #provide a failsafe to avoid infinite loop. This occurs if there is no more application/ld_json tags
 
-            # if recipeIngredient not found in first block of script, then search next
-            failsafe = 0;
-            while "recipeIngredient" not in str(getJSON) and failsafe < 10:
-                getJSON = getJSON.findNext("script", {"type": "application/ld+json"})
-                failsafe = failsafe + 1 #provide a failsafe to avoid infinite loop. This occurs if there is no more application/ld_json tags
+                # parse out html tags
+                ld_json = re.sub(r"<[^>]*>", "", ld_json.string)
 
-            # parse out tags
-            getJSON = re.sub(r"<[^>]*>", "", getJSON.string)
+                # decode JSON
+                items_dict = json.loads(ld_json)
+                if ld_json.startswith('[') and ld_json.endswith(']'):
+                    items_dict = items_dict[1]
 
-            # create list
-            list = getJSON
+                recipe_list = items_dict["recipeIngredient"]
 
-            # decode JSON
-            list = json.loads(list)
+                # pull each item from dictionary
+                for ele in recipe_list:
+                    item = Item(name=ele, user=current_user, list_id=list_id) #store
+                    db.session.add(item)
+                    db.session.commit()
+            else:
+                oembed_json = soup.find("link", rel="alternate", type="application/json+oembed", href=True)['href'] # METHOD 2: parse for JSON-OEMBED
+                api_request = requests.get(oembed_json)
+                api_contents = api_request.json()
+                api_contents_title = api_contents['title']
+                api_contents_html = api_contents['html']
+                api_soup = BeautifulSoup(api_contents_html, 'html5lib')
 
-            # extract recipe ingredient list
-            recipeList = list["recipeIngredient"]
+                recipe_list = api_soup.findAll("li", itemprop="recipeIngredient")
+                for ele in recipe_list:
+                    Item(name=ele, user=current_user) #store
+                    db.session.add(item)
+                    db.session.commit()
 
-            # pull each item from dictionary
-            for ele in recipeList:
-                item = Item(name=ele, user=current_user, list_id=list_id) #store
-                db.session.add(item)
-                db.session.commit()
-
+            # Success if we got to here
             flash(f'Ingredients obtained from {form.recipe_url.data}', 'success')
-
-        except:
+        except Exception as e:
+            print(e)
             flash(f'Cannot obtain ingredients from {form.recipe_url.data}', 'danger')
 
-        # Method 2
-        try:
-            url = form.recipe_url.data
-            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-            r = requests.get(url, headers = headers)
-            soup = BeautifulSoup(r.text,'html5lib')
-            oEmbedURL = soup.find("link", rel="alternate", type="application/json+oembed", href = True)['href']
-
-            apiRequest = requests.get(oEmbedURL)
-            apiContents = apiRequest.json()
-            apiContentsTitle = apiContents['title']
-            apiContentsHtml = apiContents['html']
-            apiSoup = BeautifulSoup(apiContentsHtml, 'html5lib')
-
-            list = apiSoup.findAll("li", itemprop="recipeIngredient")
-
-            for ele in list:
-                Item(name=ele, user=current_user) #store
-                db.session.add(item)
-                db.session.commit()
-
-            flash(f'Ingredients obtained from {form.recipe_url.data}', 'success')
-        except:
-            flash(f'Cannot obtain ingredients from {form.recipe_url.data}', 'danger')
-        '''
-else:
-# use this method if no application/ld+json
-    oEmbedURL = soup.find("link", rel="alternate", type="application/json+oembed", href = True)['href']
-
-    apiRequest = requests.get(oEmbedURL)
-    apiContents = apiRequest.json()
-    apiContentsTitle = apiContents['title']
-    apiContentsHtml = apiContents['html']
-    apiSoup = BeautifulSoup(apiContentsHtml, 'html5lib')
-
-    list = apiSoup.findAll("li", itemprop="recipeIngredient")
-
-    for ele in list:
-        Item(name=ele, user=current_user) #store
-        db.session.add(item)
-        db.session.commit()
-
-    flash(f'Ingredients obtained from {form.recipe_url.data}', 'success')
-        '''
-
-    # END RECIPE WEB SCRAPING
-
-    try:
-        items = Item.query.filter_by(list_id=list_id).all()
-    except:
-        items = []
-        flash(f'No items have been added to the list yet. Enter a recipe url below to get started.', 'info')
+    items = []
+    items = Item.query.filter_by(list_id=list_id).all()
 
     return render_template('list.html', form=form, items=items)
+
+    # END RECIPE WEB SCRAPING
