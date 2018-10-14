@@ -1,5 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, session
-from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe
+from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe
 from flaskrecipe.models import User, Item, List, Recipe
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
@@ -100,9 +100,8 @@ def list(list_id):
     # load list
     list_data = List.query.filter_by(id=list_id).first()
 
-    form = EnterRecipe()
-
     # BEGIN RECIPE WEB SCRAPING
+    form = EnterRecipe()
     if form.validate_on_submit and request.method == 'POST':
         try:
             url = form.recipe_url.data
@@ -130,6 +129,8 @@ def list(list_id):
 
                 recipe_list = items_dict["recipeIngredient"]
                 recipe_title = soup.title.string
+                if recipe_title is None:
+                    recipe_title = ''
                 #recipe_title = items_dict["headline"]
 
                 recipe_data = Recipe(name=recipe_title, instructions=url)
@@ -142,21 +143,18 @@ def list(list_id):
                     db.session.add(item)
                     db.session.commit()
             else:
-                oembed_json = soup.find("link", rel="alternate", type="application/json+oembed", href=True)['href'] # METHOD 2: parse for JSON-OEMBED
-                api_request = requests.get(oembed_json)
-                api_contents = api_request.json()
-                api_contents_title = api_contents['title']
-                api_contents_html = api_contents['html']
-                api_soup = BeautifulSoup(api_contents_html, 'html5lib')
-
+                #first store recipe
                 recipe_title = soup.title.string
+                if recipe_title is None:
+                    recipe_title = 'none'
                 recipe_data = Recipe(name=recipe_title, instructions=url)
                 db.session.add(recipe_data)
                 db.session.commit()
 
-                recipe_list = api_soup.findAll("li", itemprop="recipeIngredient")
+                recipe_list = soup.findAll("li", itemprop=re.compile("\w*([Ii]ngredient)\w*"))
+
                 for ele in recipe_list:
-                    Item(name=ele, user=current_user, recipe_id=recipe_data.id) #store
+                    item = Item(name=ele.text, user=current_user, list_id=list_id, recipe_id=recipe_data.id) #store
                     db.session.add(item)
                     db.session.commit()
 
@@ -175,6 +173,22 @@ def list(list_id):
         if find_recipe not in recipes:
             recipes.append(find_recipe)
 
-    return render_template('list.html', form=form, items=items, recipes=recipes)
+    # DELETEING RECIPES
+    delete_recipe = DeleteRecipe()
+    delete_recipe.selected_recipe.choices = recipes #populate drop-down form
+
+    return render_template('list.html', form=form, items=items, delete_recipe=delete_recipe, list_id=list_id)
 
     # END RECIPE WEB SCRAPING
+
+@app.route("/delete", methods= ['GET','POST'])
+def delete():
+    recipe_id = request.form.get('recipe')
+    list = request.form.get('list')
+    Item.query.filter(Item.recipe_id==recipe_id).delete()
+    Recipe.query.filter(Recipe.id==recipe_id).delete()
+
+    db.session.commit()
+
+    flash(f'Deleted recipe', 'success')
+    return redirect(url_for('list', list_id=list))

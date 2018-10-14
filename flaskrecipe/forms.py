@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField
+from wtforms_sqlalchemy.fields import QuerySelectField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
-from flaskrecipe.models import User
+from flaskrecipe.models import User, Recipe
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=5,max=20)])
@@ -33,3 +34,7 @@ class NewListForm(FlaskForm):
 class EnterRecipe(FlaskForm):
     recipe_url = StringField('Recipe URL', validators=[DataRequired()])
     submit = SubmitField('Get Ingredients')
+
+class DeleteRecipe(FlaskForm):
+    selected_recipe = SelectField(u'Recipes',coerce=int)
+    delete = SubmitField('Delete Recipe')
