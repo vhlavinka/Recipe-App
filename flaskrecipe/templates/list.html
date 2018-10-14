@@ -1,6 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
 
+<div class="dropdown">
+  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select Recipe
+  <span class="caret"></span></button>
+  <ul class="dropdown-menu">
+  {% for recipe in recipes %}
+    <li>{{ recipe.name }}</li>
+  {% endfor %}
+  </ul>
+  <button type="button" class="btn btn-default">Delete</button>
+</div>
 <div class="content-section">
   <legend class="border-bottom mb-4">Grocery List</legend>
   <ul>

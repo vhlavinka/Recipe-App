@@ -1,6 +1,6 @@
 from flask import render_template, url_for, flash, redirect, request, session
 from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe
-from flaskrecipe.models import User, Item, List
+from flaskrecipe.models import User, Item, List, Recipe
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
 from bs4 import BeautifulSoup
@@ -129,10 +129,16 @@ def list(list_id):
                     items_dict = items_dict[1]
 
                 recipe_list = items_dict["recipeIngredient"]
+                recipe_title = soup.title.string
+                #recipe_title = items_dict["headline"]
+
+                recipe_data = Recipe(name=recipe_title, instructions=url)
+                db.session.add(recipe_data)
+                db.session.commit()
 
                 # pull each item from dictionary
                 for ele in recipe_list:
-                    item = Item(name=ele, user=current_user, list_id=list_id) #store
+                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id) #store
                     db.session.add(item)
                     db.session.commit()
             else:
@@ -143,9 +149,14 @@ def list(list_id):
                 api_contents_html = api_contents['html']
                 api_soup = BeautifulSoup(api_contents_html, 'html5lib')
 
+                recipe_title = soup.title.string
+                recipe_data = Recipe(name=recipe_title, instructions=url)
+                db.session.add(recipe_data)
+                db.session.commit()
+
                 recipe_list = api_soup.findAll("li", itemprop="recipeIngredient")
                 for ele in recipe_list:
-                    Item(name=ele, user=current_user) #store
+                    Item(name=ele, user=current_user, recipe_id=recipe_data.id) #store
                     db.session.add(item)
                     db.session.commit()
 
@@ -158,6 +169,12 @@ def list(list_id):
     items = []
     items = Item.query.filter_by(list_id=list_id).all()
 
-    return render_template('list.html', form=form, items=items)
+    recipes = []
+    for i in items:
+        find_recipe = Recipe.query.filter_by(id=i.recipe_id).first()
+        if find_recipe not in recipes:
+            recipes.append(find_recipe)
+
+    return render_template('list.html', form=form, items=items, recipes=recipes)
 
     # END RECIPE WEB SCRAPING

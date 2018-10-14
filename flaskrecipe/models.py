@@ -29,7 +29,7 @@ class Item(db.Model):
     # One item belongs to one list
     #list = db.relationship('List_Items', backref='item', lazy=True, uselist=False)
     def __repr__(self):
-        return f"Item('{self.id}', '{self.name}')"
+        return f"Item('{self.id}', '{self.name}','{self.recipe_id}')"
 
 class List(db.Model):
     id = db.Column(db.Integer, primary_key=True)
