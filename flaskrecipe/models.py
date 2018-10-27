@@ -24,6 +24,7 @@ class Item(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=True) # does not have to belond to a recipe
     list_id = db.Column(db.Integer, db.ForeignKey('list.id'), nullable=False)
     checked = db.Column(db.Integer, default=0)
+    category_id = db.Column(db.Integer, default=1)
     # one to one with Recipe_Ingredients
     #recipe = db.relationship('Recipe_Ingredients', backref='recipe_item', lazy=True, uselist=False)
     # One item belongs to one list
@@ -52,6 +53,11 @@ class Recipe(db.Model):
     #ingredients = db.relationship('Recipe_Ingredients', backref='recipe', lazy=True) # one recipe may have many ingredients
     def __repr__(self):
         return f"Recipe('{self.id}', '{self.name}')"
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    name = db.Column(db.String(100))
+    ingredients = db.relationship('Item', backref='category', lazy=True)
 '''
 class Recipe_Ingredients(db.Model):
     id = db.Column(db.Integer, primary_key=True)

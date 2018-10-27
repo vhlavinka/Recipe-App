@@ -1,15 +1,14 @@
 {% extends "layout.html" %}
 {% block content %}
-
 <div class="content-section">
   <legend class="border-bottom mb-4">Grocery List</legend>
-  <ul>
     {% for item in items %}
-        <li>
-            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
-        </li>
+    <div class="checkbox">
+        <label><input type="checkbox" value="">
+          <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+        </label>
+    </div>
     {% endfor %}
-  </ul>
   <form method="POST" action="">
     {{ form.hidden_tag() }}
     <fieldset class="form-group">
@@ -38,7 +37,4 @@
     </div>
   </form>
 </div>
-
-
-
 {% endblock content%}
