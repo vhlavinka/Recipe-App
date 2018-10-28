@@ -12,12 +12,16 @@ h1, h2, h3, h4, h5, h6 {
 
 }
 
+.carousel-caption p{
+  color: #ffffff;
+}
+
 .bg-steel {
   background-color: #3b3d42
 }
 
 .site-header .navbar-brand{
-  color: #fcebd6;
+  color: #ffffff;
   font-size: 2.5rem;
   font-family: "Yellowtail", cursive;
 }
@@ -92,6 +96,9 @@ a.article-title:hover {
 .account-heading {
   font-size: 2.5rem;
 }
+
+/* Buttons */
+.card, .btn, .form-control { border-radius: 0; }
 
 /* Calendar CSS  */
 .agenda {  }
