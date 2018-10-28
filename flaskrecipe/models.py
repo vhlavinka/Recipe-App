@@ -24,7 +24,7 @@ class Item(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=True) # does not have to belond to a recipe
     list_id = db.Column(db.Integer, db.ForeignKey('list.id'), nullable=False)
     checked = db.Column(db.Integer, default=0)
-    category_id = db.Column(db.Integer, default=1)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False, default=1)
     # one to one with Recipe_Ingredients
     #recipe = db.relationship('Recipe_Ingredients', backref='recipe_item', lazy=True, uselist=False)
     # One item belongs to one list

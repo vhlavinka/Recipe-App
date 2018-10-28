@@ -1,13 +1,96 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="content-section">
-  <legend class="border-bottom mb-4">Grocery List</legend>
+  <legend class="border-bottom mb-4">{{ list.list_title }}</legend>
+  <h6>Canned Goods</h6>
+  {% for item in items %}
+    {% if item.category.id == 2 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Frozen Foods</h6>
+  {% for item in items %}
+    {% if item.category.id == 3 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Meat</h6>
+  {% for item in items %}
+    {% if item.category.id == 4 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Dairy/Eggs</h6>
+  {% for item in items %}
+    {% if item.category.id == 5 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Bakery</h6>
+  {% for item in items %}
+    {% if item.category.id == 6 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Beverages</h6>
+  {% for item in items %}
+    {% if item.category.id == 7 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Produce</h6>
+  {% for item in items %}
+    {% if item.category.id == 8 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Cooking/Baking</h6>
+  {% for item in items %}
+    {% if item.category.id == 9 %}
+      <div class="checkbox">
+          <label><input type="checkbox" value="">
+            <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+          </label>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h6>Other</h6>
     {% for item in items %}
-    <div class="checkbox">
-        <label><input type="checkbox" value="">
-          <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
-        </label>
-    </div>
+      {% if item.category.id == 1 %}
+        <div class="checkbox">
+            <label><input type="checkbox" value="">
+              <a class="mr-2" href="{{ url_for('myrecipes') }}">{{ item.name }}</a>
+            </label>
+        </div>
+      {% endif %}
     {% endfor %}
   <form method="POST" action="">
     {{ form.hidden_tag() }}
