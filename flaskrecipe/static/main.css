@@ -1,32 +1,45 @@
+@import url('https://fonts.googleapis.com/css?family=Avenir:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i');
+@import url('https://fonts.googleapis.com/css?family=Yellowtail');
 body {
   background: #fafafa;
   color: #333333;
-  margin-top: 5rem;
+  margin-top: 6.5rem;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: #3b3d42;
+  font-family: "Avenir", sans-serif;
+
 }
 
 .bg-steel {
   background-color: #3b3d42
 }
 
+.site-header .navbar-brand{
+  color: #fcebd6;
+  font-size: 2.5rem;
+  font-family: "Yellowtail", cursive;
+}
+
 .site-header .navbar-nav .nav-link {
   color: #ffd299;
+  font-family: "Avenir", sans-serif;
 }
 
 .site-header .navbar-nav .nav-link:hover {
   color: #ffffff;
+  font-family: "Avenir", sans-serif;
 }
 
 .site-header .navbar-nav .nav-link.active {
   font-weight: 500;
+
 }
 
 .content-section {
   background: #ffffff;
-  font-family: "Arial", Arial, sans-serif;
+  font-family: "Avenir", sans-serif;
   padding: 10px 20px;
   border: 1px solid #dddddd;
   border-radius: 3px;
@@ -78,4 +91,34 @@ a.article-title:hover {
 
 .account-heading {
   font-size: 2.5rem;
+}
+
+/* Calendar CSS  */
+.agenda {  }
+
+/* Dates */
+.agenda .agenda-date { width: 170px; }
+.agenda .agenda-date .dayofmonth {
+  width: 40px;
+  font-size: 36px;
+  line-height: 36px;
+  float: left;
+  text-align: right;
+  margin-right: 10px;
+}
+.agenda .agenda-date .shortdate {
+  font-size: 0.75em;
+}
+
+
+/* Times */
+.agenda .agenda-time { width: 140px; }
+
+
+/* Events */
+.agenda .agenda-events {  }
+.agenda .agenda-events .agenda-event {  }
+
+@media (max-width: 767px) {
+
 }

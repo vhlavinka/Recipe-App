@@ -262,7 +262,7 @@ def list(list_id):
 
                     categories_list = []
                     for s in synset_list:
-                        print(s.definition())
+                        #print(s.definition())
                         categories_list.append(categorize(s))
 
                     # some categories will precede others, choose highest
@@ -308,6 +308,10 @@ def list(list_id):
 
     # END RECIPE WEB SCRAPING
 
+''' ------------------------------------------------------------
+D E L E T E   R E C I P E
+--------------------------------------------------------------- '''
+
 @app.route("/delete", methods= ['GET','POST'])
 def delete():
     recipe_id = request.form.get('recipe')
@@ -319,3 +323,8 @@ def delete():
 
     flash(f'Deleted recipe', 'success')
     return redirect(url_for('list', list_id=list))
+
+
+@app.route("/calendar")
+def calendar():
+    return render_template('calendar.html')
