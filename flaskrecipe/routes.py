@@ -1,5 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, session
-from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe
+from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem
 from flaskrecipe.models import User, Item, List, Recipe, Category
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
@@ -10,6 +10,58 @@ from nltk.corpus import wordnet as wn
 import requests
 import json
 import re
+
+def assign_category(ele):
+    # ******************* begin categorizing *******************
+    # tokenize ingredient to pick out which words are foods
+    words = word_tokenize(ele)
+
+    # filter stop words (of, the, a, ...)
+    include_stop_words = set()
+    include_stop_words.add('can')
+    stop_words = set(stopwords.words('english')) - include_stop_words
+    words_filtered = []
+    for w in words:
+        if w not in stop_words:
+            words_filtered.append(w)
+
+    # get synset of each word and store in list
+    synset_list = []
+    for w in words_filtered:
+        syn = set()
+        syn = wn.synsets(w)
+        if len(syn) > 0:
+            synset_list.append(syn[0])
+        #print(syn.name())
+        #print(syn.definition())
+
+    primary_category = 'Other'
+
+    categories_list = []
+    for s in synset_list:
+        print(s.definition())
+        categories_list.append(categorize(s))
+
+    # some categories will precede others, choose highest
+    categories = ''.join(categories_list)
+    if 'Canned Goods' in categories:
+        primary_category = 'Canned Goods'
+    elif 'Frozen Foods' in categories:
+        primary_category = 'Frozen Foods'
+    else:
+        for c in categories_list: # ['Other','Produce', 'Other']
+            if c != 'Other':
+                primary_category = c
+                break
+            else:
+                primary_category = c
+
+    get_category = Category.query.filter_by(name=primary_category).first()
+    if get_category is None:
+        get_category = Category.query.filter_by(name="Other").first()
+
+    return(get_category.id)
+    # ******************* end categorizing *******************
 
 # used in def list to categorize items
 def categorize(s):
@@ -134,9 +186,17 @@ def list(list_id):
     # load list
     list_data = List.query.filter_by(id=list_id).first()
 
+    # To add list items in manually
+    additional_item = AdditionalListItem()
+    if additional_item.validate_on_submit and request.method == 'POST':
+        cat_type = assign_category(additional_item.new_item.data)
+        new_item = Item(name=additional_item.new_item.data, user=current_user, list_id=list_data.id, category_id=cat_type) #store
+        db.session.add(new_item)
+        db.session.commit()
+
     # BEGIN RECIPE WEB SCRAPING
     form = EnterRecipe()
-    if form.validate_on_submit and request.method == 'POST':
+    if form.validate_on_submit and form.submit.data and request.method == 'POST':
         try:
             url = form.recipe_url.data
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
@@ -173,6 +233,8 @@ def list(list_id):
 
                 # pull each item from dictionary
                 for ele in recipe_list:
+                    #get_category = assign_category(ele)
+
                     # ******************* begin categorizing *******************
                     # tokenize ingredient to pick out which words are foods
                     words = word_tokenize(ele)
@@ -235,6 +297,7 @@ def list(list_id):
                 recipe_list = soup.findAll("li", itemprop=re.compile("\w*([Ii]ngredient)\w*"))
 
                 for ele in recipe_list:
+                    '''
                     # ******************* begin categorizing *******************
                     # tokenize ingredient to pick out which words are foods
                     words = word_tokenize(ele)
@@ -278,8 +341,10 @@ def list(list_id):
                                 break
                             else:
                                 primary_category = c
+                    '''
 
-                    get_category = Category.query.filter_by(name=primary_category).first()
+
+                    get_category = Category.query.filter_by(name="Other").first()  #change back to primary_category
                     # ******************* end categorizing *******************
                     item = Item(name=ele.text, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category.id) #store
                     db.session.add(item)
@@ -288,6 +353,7 @@ def list(list_id):
             # Success if we got to here
             flash(f'Ingredients obtained from {form.recipe_url.data}', 'success')
         except Exception as e:
+            print("EXCEPTION")
             print(e)
             flash(f'Cannot obtain ingredients from {form.recipe_url.data}', 'danger')
 
@@ -304,7 +370,7 @@ def list(list_id):
     delete_recipe = DeleteRecipe()
     delete_recipe.selected_recipe.choices = recipes #populate drop-down form
 
-    return render_template('list.html', form=form, items=items, delete_recipe=delete_recipe, list_id=list_id, list = list_data)
+    return render_template('list.html', form=form, items=items, delete_recipe=delete_recipe, list_id=list_id, list = list_data, additional_item=additional_item)
 
     # END RECIPE WEB SCRAPING
 

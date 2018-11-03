@@ -92,6 +92,18 @@
         </div>
       {% endif %}
     {% endfor %}
+    <form method="POST" action="">
+      {{ form.hidden_tag() }}
+      <fieldset class="form-group">
+          <div class="form-group">
+            {{ additional_item.new_item.label(class="form-control-label") }}
+            {{ additional_item.new_item(class="form-control form-control-lg") }}
+          </div>
+      </fieldset>
+      <div class="form-group">
+        {{ additional_item.submit_item(class="btn btn-outline-secondary") }}
+      </div>
+    </form>
   <form method="POST" action="">
     {{ form.hidden_tag() }}
     <fieldset class="form-group">
@@ -101,22 +113,22 @@
         </div>
     </fieldset>
     <div class="form-group">
-      {{ form.submit(class="btn btn-outline-info") }}
+      {{ form.submit(class="btn btn-outline-secondary") }}
     </div>
   </form>
   <form method="POST" action="{{ url_for('delete') }} ">
     <input type="hidden" name="list" value="{{ list_id }}">
     <div class="form-group">
       <label for="sel1">Recipes:</label>
-      <select class="form-control" id="sel1" name="recipe">
-        <option value='none'>Select</option>
+      <select class="form-control" id="sel1" name="recipe" required>
+        <option value="">Select</option>
         {% for recipe in delete_recipe.selected_recipe.choices %}
           <option value='{{ recipe.id }}'>{{ recipe.name }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="form-group">
-      {{ delete_recipe.delete(class="btn btn-outline-info") }}
+      {{ delete_recipe.delete(class="btn btn-outline-danger") }}
     </div>
   </form>
 </div>

@@ -38,3 +38,7 @@ class EnterRecipe(FlaskForm):
 class DeleteRecipe(FlaskForm):
     selected_recipe = SelectField(u'Recipes',coerce=int)
     delete = SubmitField('Delete Recipe')
+
+class AdditionalListItem(FlaskForm):
+    new_item = StringField('New Item', validators=[DataRequired()])
+    submit_item = SubmitField('Add Item')
