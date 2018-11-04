@@ -46,3 +46,7 @@ class AdditionalListItem(FlaskForm):
 class FilterItemForm(FlaskForm):
     filter_item = StringField('', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+class SelectRecipe(FlaskForm):
+    selected_recipe = SelectField(u'Recipes',coerce=int)
+    submit = SubmitField('Select Recipe')

@@ -17,17 +17,25 @@
     <h5>FILTER INGREDIENTS</h5>
     <p class='text-muted'> Add items to be filtered out
       <ul class="list-group">
+        {% for filter in filters %}
         <li class="list-group-item list-group-item-light">
-
-        </li>
-        <li class="list-group-item list-group-item-light">
-
-        </li>
-        <li class="list-group-item list-group-item-light">
-
+          {{ filter.name }}
         </li>
       </ul>
+      {% endfor %}
     </p>
+    <form method="POST" action="">
+      {{ filter_form.hidden_tag() }}
+      <fieldset class="form-group">
+          <div class="form-group">
+            {{ filter_form.filter_item.label(class="form-control-label") }}
+            {{ filter_form.filter_item(class="form-control form-control-lg") }}
+          </div>
+      </fieldset>
+      <div class="form-group">
+        {{ filter_form.submit(class="btn btn-outline-secondary") }}
+      </div>
+    </form>
   </div>
 </div>
 {% endblock sidebar %}

@@ -1,5 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, session
-from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm
+from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm, SelectRecipe
 from flaskrecipe.models import User, Item, List, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
@@ -149,7 +149,7 @@ def logout():
     return redirect(url_for('home'))
 
 ''' ------------------------------------------------------------------------------------------
-MY LISTS PAGE / RECIPE PAGE
+MY LISTS PAGE : view all lists and manage filtered ingredients
 ------------------------------------------------------------------------------------------ '''
 @app.route("/myrecipes", methods= ['GET','POST'])
 def myrecipes():
@@ -171,13 +171,25 @@ def recipe(recipe_id):
 
 @app.route("/mylists", methods= ['GET','POST'])
 def mylists():
+    filter_form = FilterItemForm()
+    if filter_form.validate_on_submit and filter_form.submit.data and request.method == 'POST':
+        new_filter = Filter_Item(name=filter_form.filter_item.data,user_id=current_user.id)
+        db.session.add(new_filter)
+        db.session.commit()
+
+    filters = []
+    lists = []
     try:
         lists = List.query.filter_by(user_id=current_user.id).all()
-        #filters = Filter_Item.query.filter_by()
+        filters = Filter_Item.query.filter_by(user_id=current_user.id).all()
+
     except:
-        lists = []
         flash(f'No lists have been created yet.', 'info')
-    return render_template('mylists.html', lists=lists)
+    return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form)
+
+''' ------------------------------------------------------------------------------------------
+LISTS PAGE : view items in list
+------------------------------------------------------------------------------------------ '''
 
 @app.route("/mylists/list/<list_id>", methods= ['GET','POST'])
 def list(list_id):
@@ -229,7 +241,7 @@ def list(list_id):
                     recipe_title = ''
                 #recipe_title = items_dict["headline"]
 
-                recipe_data = Recipe(name=recipe_title, instructions=url)
+                recipe_data = Recipe(name=recipe_title, instructions=url, user_id=current_user.id)
                 db.session.add(recipe_data)
                 db.session.commit()
 
@@ -291,7 +303,7 @@ def list(list_id):
                 recipe_title = soup.title.string
                 if recipe_title is None:
                     recipe_title = 'none'
-                recipe_data = Recipe(name=recipe_title, instructions=url)
+                recipe_data = Recipe(name=recipe_title, instructions=url, user_id=current_user.id)
                 db.session.add(recipe_data)
                 db.session.commit()
 
@@ -373,9 +385,8 @@ def list(list_id):
     # END RECIPE WEB SCRAPING
 
 ''' ------------------------------------------------------------
-D E L E T E   R E C I P E
+DELETE RECIPE
 --------------------------------------------------------------- '''
-
 @app.route("/delete", methods= ['GET','POST'])
 def delete():
     recipe_id = request.form.get('recipe')
@@ -388,7 +399,27 @@ def delete():
     flash(f'Deleted recipe', 'success')
     return redirect(url_for('list', list_id=list))
 
+''' ------------------------------------------------------------
+CALENDAR
+--------------------------------------------------------------- '''
+import dateutil
+@app.template_filter('strftime')
+def _jinja2_filter_datetime(date, fmt=None):
+    if date is None:
+        return 'None'
+    format='%b %d, %Y'
+    return date.strftime(format)
 
 @app.route("/calendar")
 def calendar():
-    return render_template('calendar.html')
+    select_form = SelectRecipe()
+    recipes = []
+    recipes_with_dates = []
+    try:
+        recipes = Recipe.query.filter(User.id==current_user.id).all()
+        recipes_with_dates = Recipe.query.filter(User.id==current_user.id, Recipe.plan_date != None).all()
+    except Exception as e:
+        print(e)
+
+    select_form.selected_recipe.choices = recipes
+    return render_template('calendar.html', select_form=select_form, recipes=recipes, recipes_with_dates=recipes_with_dates)

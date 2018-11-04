@@ -1,6 +1,9 @@
 ''' ================================================================
 Delete recipeapp.db to reset the database
 Run this to create the tables and populate Category data
+(within Flask_Recipe directory)
+$ python3 CreateTables.py
+
 Re-create users on front end
 ================================================================ '''
 from flaskrecipe import db

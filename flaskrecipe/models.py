@@ -14,8 +14,9 @@ class User(db.Model, UserMixin):
     items = db.relationship('Item', backref='user', lazy=True)
     lists = db.relationship('List', backref='user', lazy=True)
     filters = db.relationship('Filter_Item', backref='user', lazy=True)
+    recipes = db.relationship('Recipe', backref='user', lazy=True)
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}')"
+        return f"User('{self.id}','{self.username}', '{self.email}')"
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -47,12 +48,13 @@ class List(db.Model):
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     name = db.Column(db.String(500))
-    # replace instructions with url to original recipe
-    instructions = db.Column(db.String(5000))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    plan_date = db.Column(db.DateTime(), nullable=True)
+    instructions = db.Column(db.String(5000)) # replace instructions with url to original recipe
     ingredients = db.relationship('Item', backref='ingredient', lazy=True) # one recipe may have many ingredients
-    #ingredients = db.relationship('Recipe_Ingredients', backref='recipe', lazy=True) # one recipe may have many ingredients
+
     def __repr__(self):
-        return f"Recipe('{self.id}', '{self.name}')"
+        return f"Recipe('{self.id}', '{self.name}','{self.user_id}', '{self.plan_date}')"
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
