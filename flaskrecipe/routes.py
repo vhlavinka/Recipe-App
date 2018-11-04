@@ -1,6 +1,6 @@
 from flask import render_template, url_for, flash, redirect, request, session
 from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem
-from flaskrecipe.models import User, Item, List, Recipe, Category
+from flaskrecipe.models import User, Item, List, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
 from bs4 import BeautifulSoup
@@ -56,9 +56,10 @@ def assign_category(ele):
             else:
                 primary_category = c
 
-    get_category = Category.query.filter_by(name=primary_category).first()
     if get_category is None:
         get_category = Category.query.filter_by(name="Other").first()
+    else:
+        get_category = Category.query.filter_by(name=primary_category).first()
 
     return(get_category.id)
     # ******************* end categorizing *******************
@@ -188,7 +189,7 @@ def list(list_id):
 
     # To add list items in manually
     additional_item = AdditionalListItem()
-    if additional_item.validate_on_submit and request.method == 'POST':
+    if additional_item.validate_on_submit and additional_item.submit_item.data and request.method == 'POST':
         cat_type = assign_category(additional_item.new_item.data)
         new_item = Item(name=additional_item.new_item.data, user=current_user, list_id=list_data.id, category_id=cat_type) #store
         db.session.add(new_item)
@@ -233,8 +234,8 @@ def list(list_id):
 
                 # pull each item from dictionary
                 for ele in recipe_list:
-                    #get_category = assign_category(ele)
-
+                    get_category = assign_category(ele)
+                    '''
                     # ******************* begin categorizing *******************
                     # tokenize ingredient to pick out which words are foods
                     words = word_tokenize(ele)
@@ -279,10 +280,10 @@ def list(list_id):
                             else:
                                 primary_category = c
 
-                    get_category = Category.query.filter_by(name=primary_category).first()
+                    get_category = Category.query.filter_by(name=primary_category).first()'''
                     # ******************* end categorizing *******************
 
-                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category.id) #store
+                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category) #store
                     db.session.add(item)
                     db.session.commit()
             else:
