@@ -1,5 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, session
-from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem
+from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm
 from flaskrecipe.models import User, Item, List, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
@@ -56,12 +56,12 @@ def assign_category(ele):
             else:
                 primary_category = c
 
-    if get_category is None:
-        get_category = Category.query.filter_by(name="Other").first()
+    if primary_category is None:
+        primary_category = Category.query.filter_by(name="Other").first()
     else:
-        get_category = Category.query.filter_by(name=primary_category).first()
+        primary_category = Category.query.filter_by(name=primary_category).first()
 
-    return(get_category.id)
+    return(primary_category.id)
     # ******************* end categorizing *******************
 
 # used in def list to categorize items
@@ -173,6 +173,7 @@ def recipe(recipe_id):
 def mylists():
     try:
         lists = List.query.filter_by(user_id=current_user.id).all()
+        #filters = Filter_Item.query.filter_by()
     except:
         lists = []
         flash(f'No lists have been created yet.', 'info')
@@ -235,7 +236,6 @@ def list(list_id):
                 # pull each item from dictionary
                 for ele in recipe_list:
                     get_category = assign_category(ele)
-                    '''
                     # ******************* begin categorizing *******************
                     # tokenize ingredient to pick out which words are foods
                     words = word_tokenize(ele)
@@ -280,10 +280,10 @@ def list(list_id):
                             else:
                                 primary_category = c
 
-                    get_category = Category.query.filter_by(name=primary_category).first()'''
+                    get_category = Category.query.filter_by(name=primary_category).first()
                     # ******************* end categorizing *******************
 
-                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category) #store
+                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category.id) #store
                     db.session.add(item)
                     db.session.commit()
             else:
@@ -298,7 +298,6 @@ def list(list_id):
                 recipe_list = soup.findAll("li", itemprop=re.compile("\w*([Ii]ngredient)\w*"))
 
                 for ele in recipe_list:
-                    '''
                     # ******************* begin categorizing *******************
                     # tokenize ingredient to pick out which words are foods
                     words = word_tokenize(ele)
@@ -342,8 +341,6 @@ def list(list_id):
                                 break
                             else:
                                 primary_category = c
-                    '''
-
 
                     get_category = Category.query.filter_by(name="Other").first()  #change back to primary_category
                     # ******************* end categorizing *******************

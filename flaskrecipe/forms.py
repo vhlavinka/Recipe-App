@@ -42,3 +42,7 @@ class DeleteRecipe(FlaskForm):
 class AdditionalListItem(FlaskForm):
     new_item = StringField('New Item', validators=[DataRequired()])
     submit_item = SubmitField('Add Item')
+
+class FilterItemForm(FlaskForm):
+    filter_item = StringField('', validators=[DataRequired()])
+    submit = SubmitField('Submit')

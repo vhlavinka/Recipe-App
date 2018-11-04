@@ -3,7 +3,7 @@ Delete recipeapp.db to reset the database
 Run this to create the tables and populate Category data
 Re-create users on front end
 ================================================================ '''
-
+from flaskrecipe import db
 from flaskrecipe.models import User, Item, List, Recipe, Category, Filter_Item
 
 # create all tables

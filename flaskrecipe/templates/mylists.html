@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="content-section">
-  <legend class="border-bottom mb-4">My Lists</legend>
+  <legend class="border-bottom mb-4">MY LISTS</legend>
   <ul>
     {% for list in lists %}
         <li>
@@ -11,3 +11,23 @@
   </ul>
 </div>
 {% endblock content%}
+{% block sidebar %}
+<div class="col-md-4">
+  <div class="content-section">
+    <h5>FILTER INGREDIENTS</h5>
+    <p class='text-muted'> Add items to be filtered out
+      <ul class="list-group">
+        <li class="list-group-item list-group-item-light">
+
+        </li>
+        <li class="list-group-item list-group-item-light">
+
+        </li>
+        <li class="list-group-item list-group-item-light">
+
+        </li>
+      </ul>
+    </p>
+  </div>
+</div>
+{% endblock sidebar %}

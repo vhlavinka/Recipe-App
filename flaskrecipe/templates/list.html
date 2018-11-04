@@ -92,6 +92,12 @@
         </div>
       {% endif %}
     {% endfor %}
+</div>
+{% endblock content%}
+{% block sidebar %}
+<div class="col-md-4">
+  <div class="content-section">
+    <h5>MANAGE LIST</h5>
     <form method="POST" action="">
       {{ form.hidden_tag() }}
       <fieldset class="form-group">
@@ -104,32 +110,33 @@
         {{ additional_item.submit_item(class="btn btn-outline-secondary") }}
       </div>
     </form>
-  <form method="POST" action="">
-    {{ form.hidden_tag() }}
-    <fieldset class="form-group">
-        <div class="form-group">
-          {{ form.recipe_url.label(class="form-control-label") }}
-          {{ form.recipe_url(class="form-control form-control-lg") }}
-        </div>
-    </fieldset>
-    <div class="form-group">
-      {{ form.submit(class="btn btn-outline-secondary") }}
-    </div>
-  </form>
-  <form method="POST" action="{{ url_for('delete') }} ">
-    <input type="hidden" name="list" value="{{ list_id }}">
-    <div class="form-group">
-      <label for="sel1">Recipes:</label>
-      <select class="form-control" id="sel1" name="recipe" required>
-        <option value="">Select</option>
-        {% for recipe in delete_recipe.selected_recipe.choices %}
-          <option value='{{ recipe.id }}'>{{ recipe.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-group">
-      {{ delete_recipe.delete(class="btn btn-outline-danger") }}
-    </div>
-  </form>
+    <form method="POST" action="">
+      {{ form.hidden_tag() }}
+      <fieldset class="form-group">
+          <div class="form-group">
+            {{ form.recipe_url.label(class="form-control-label") }}
+            {{ form.recipe_url(class="form-control form-control-lg") }}
+          </div>
+      </fieldset>
+      <div class="form-group">
+        {{ form.submit(class="btn btn-outline-secondary") }}
+      </div>
+    </form>
+    <form method="POST" action="{{ url_for('delete') }} ">
+      <input type="hidden" name="list" value="{{ list_id }}">
+      <div class="form-group">
+        <label for="sel1">Recipes:</label>
+        <select class="form-control" id="sel1" name="recipe" required>
+          <option value="">Select</option>
+          {% for recipe in delete_recipe.selected_recipe.choices %}
+            <option value='{{ recipe.id }}'>{{ recipe.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        {{ delete_recipe.delete(class="btn btn-outline-danger") }}
+      </div>
+    </form>
+  </div>
 </div>
-{% endblock content%}
+{% endblock sidebar%}
