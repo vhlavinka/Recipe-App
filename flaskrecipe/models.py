@@ -12,8 +12,8 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
-    # One User may belong to many lists
     lists = db.relationship('List', backref='user', lazy=True)
+    filters = db.relationship('Filter_Item', backref='user', lazy=True)
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
 
