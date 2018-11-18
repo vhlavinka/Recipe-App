@@ -1,6 +1,6 @@
 from flask import render_template, url_for, flash, redirect, request, session
 from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm, SelectRecipe
-from flaskrecipe.models import User, Item, List, Recipe, Category, Filter_Item
+from flaskrecipe.models import User, Item, Shopping_List, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
 from bs4 import BeautifulSoup
@@ -11,97 +11,15 @@ import requests
 import json
 import re
 
-def assign_category(ele):
-    # ******************* begin categorizing *******************
-    # tokenize ingredient to pick out which words are foods
-    words = word_tokenize(ele)
-
-    # filter stop words (of, the, a, ...)
-    include_stop_words = set()
-    include_stop_words.add('can')
-    stop_words = set(stopwords.words('english')) - include_stop_words
-    words_filtered = []
-    for w in words:
-        if w not in stop_words:
-            words_filtered.append(w)
-
-    # get synset of each word and store in list
-    synset_list = []
-    for w in words_filtered:
-        syn = set()
-        syn = wn.synsets(w)
-        if len(syn) > 0:
-            synset_list.append(syn[0])
-        #print(syn.name())
-        #print(syn.definition())
-
-    primary_category = 'Other'
-
-    categories_list = []
-    for s in synset_list:
-        print(s.definition())
-        categories_list.append(categorize(s))
-
-    # some categories will precede others, choose highest
-    categories = ''.join(categories_list)
-    if 'Canned Goods' in categories:
-        primary_category = 'Canned Goods'
-    elif 'Frozen Foods' in categories:
-        primary_category = 'Frozen Foods'
-    else:
-        for c in categories_list: # ['Other','Produce', 'Other']
-            if c != 'Other':
-                primary_category = c
-                break
-            else:
-                primary_category = c
-
-    if primary_category is None:
-        primary_category = Category.query.filter_by(name="Other").first()
-    else:
-        primary_category = Category.query.filter_by(name=primary_category).first()
-
-    return(primary_category.id)
-    # ******************* end categorizing *******************
-
-# used in def list to categorize items
-def categorize(s):
-    category = 'Other'
-    # keywords
-    meats = ['meat', 'chicken','fish','beef','poultry']
-    dairy = ['egg','eggs','milk','cheese','lactose']
-    bakery = ['bread','cake','croissants']
-    beverages = ['beverage','liquid','juice','water']
-    produce = ['fruit','vegetable','plant','garden']
-    baking = ['spice','herb','dry','wheat','flour','sugar']
-
-    if 'can' == s.name() or 'canned' == s.name():
-        category = 'Canned Goods'
-    elif 'frozen' in s.name():
-        category = 'Frozen Foods'
-    elif any(x in s.definition() for x in meats):
-        category = 'Meat'
-    elif any(x in s.definition() for x in dairy):
-        category = 'Dairy/Eggs'
-    elif any(x in s.definition() for x in bakery):
-        category = 'Bakery'
-    elif any(x in s.definition() for x in beverages):
-        category = 'Beverages'
-    elif any(x in s.definition() for x in produce):
-        category = 'Produce'
-    elif any(x in s.definition() for x in baking):
-        category = 'Cooking/Baking Goods'
-    else:
-        category = "Other"
-    return category
-
-# Home page will let users create a new list, which will then redirect to MyLists page upon submission
+''' ===========================================================================================
+PAGE home : summary of how to get started and create a new list here
+=========================================================================================== '''
 @app.route("/", methods= ['GET','POST'])
 @app.route("/home", methods= ['GET','POST'])
 def home():
     form = NewListForm()
     if form.validate_on_submit() and current_user.is_authenticated:
-        new_list = List(user=current_user, list_title=form.list_title.data)
+        new_list = Shopping_List(user=current_user, list_title=form.list_title.data)
         db.session.add(new_list)
         db.session.commit()
         return redirect(url_for('mylists'))
@@ -114,6 +32,9 @@ def home():
 def about():
     return render_template('about.html')
 
+''' ===========================================================================================
+PAGE signup and login : basic login and sign functionality
+=========================================================================================== '''
 @app.route("/signup", methods = ['GET','POST'])
 def register():
     if current_user.is_authenticated:
@@ -148,9 +69,9 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
-''' ------------------------------------------------------------------------------------------
-MY LISTS PAGE : view all lists and manage filtered ingredients
------------------------------------------------------------------------------------------- '''
+''' ===========================================================================================
+PAGE mylists : all of a user's lists can be viewed here
+=========================================================================================== '''
 @app.route("/myrecipes", methods= ['GET','POST'])
 def myrecipes():
     try:
@@ -180,25 +101,136 @@ def mylists():
     filters = []
     lists = []
     try:
-        lists = List.query.filter_by(user_id=current_user.id).all()
+        lists = Shopping_List.query.filter_by(user_id=current_user.id).all()
         filters = Filter_Item.query.filter_by(user_id=current_user.id).all()
 
     except:
         flash(f'No lists have been created yet.', 'info')
     return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form)
 
-''' ------------------------------------------------------------------------------------------
-LISTS PAGE : view items in list
------------------------------------------------------------------------------------------- '''
+''' ===========================================================================================
+FUNCTION categorize : assigns a category to an ingredient
+=========================================================================================== '''
+# used in def list to categorize items
+def categorize(s):
+    s = wn.synsets(syn)
+    if len(s) > 0:
+        s = s[0]
+    else:
+        return 'Other'
 
+    # keywords
+    meats = ['meat', 'chicken','fish','beef','poultry']
+    dairy = ['egg','eggs','milk','cheese','lactose']
+    bakery = ['bread','cake','croissants']
+    beverages = ['beverage','liquid','juice','water']
+    produce = ['fruit','vegetable','plant','garden']
+    baking = ['spice','herb','dry','wheat','flour','sugar','baking','flavor', 'season','powder']
+
+    # check each list of keywords to see where ingredient fits best
+    if 'can' == s.name() or 'canned' == s.name():
+        category = 'Canned Goods'
+    elif 'frozen' in s.name():
+        category = 'Frozen Foods'
+    elif any(x in s.definition() for x in meats):
+        category = 'Meat'
+    elif any(x in s.definition() for x in baking):
+        category = 'Cooking/Baking'
+    elif any(x in s.definition() for x in bakery):
+        category = 'Bakery'
+    elif any(x in s.definition() for x in beverages):
+        category = 'Beverages'
+    elif any(x in s.definition() for x in produce):
+        category = 'Produce'
+    elif any(x in s.definition() for x in dairy):
+        category = 'Dairy/Eggs'
+    else:
+        category = 'Other'
+
+    # print (s.definition())
+    return category
+
+''' ===========================================================================================
+FUCNTION assign_category : parse the ingredient phrase and prepare to find its category
+=========================================================================================== '''
+def assign_category(ele):
+    # break up the ingredient phrase into list of seperate parts
+    words = word_tokenize(ele)
+
+    # filter out stop words (of, the, a, ...)
+    include_stop_words = set()
+    include_stop_words.add('can')
+    stop_words = set(stopwords.words('english')) - include_stop_words
+    words_filtered = []
+    for w in words:
+        if w not in stop_words:
+            words_filtered.append(w)
+
+    # remove numeric values
+    reg_spec_chars = re.compile("[-!$%^&*()_+|~=`{}\[\]:;<>?,.\/]")             # find special characters
+    reg_quantity = re.compile("[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*")  # find integers and fractions
+    for w in words_filtered:
+        if re.search(reg_quantity, w):
+            words_filtered.remove(w)        # remove numbers
+        elif re.search(reg_spec_chars,w):
+            words_filtered.remove(w)        # remove special characters
+
+    # create list of foods from synset
+    food = wn.synset('foodstuff.n.02')
+    foods = list(set([w for s in food.closure(lambda s:s.hyponyms()) for w in s.lemma_names()]))
+
+    found_flag = False   # which statement to print
+    food_name = ''       # the name of the food found, some names are compound i.e. vanilla_extract
+
+    # ---- build list of compound ingredients by chaining words together ---- #
+    # ex: 'teaspoon vanilla extract'   ---> [teaspoon_vanilla, vanilla_extract]
+    wf_compounds = []
+    for i, val in enumerate(words_filtered):
+        if i > 1:
+            wf_compounds.append(words_filtered[i-1] + "_" + val)
+
+    # ---- check each list item ---- #
+    for f in foods:
+        for c in wf_compounds:  # first check all the compound words
+            if f == c:
+                food_name = c
+                found_flag = True
+                break
+        if not found_flag:      # if not found check each word alone
+            for w in words_filtered:
+                if f == w:
+                    food_name = f
+                    found_flag = True
+                    break
+
+
+    # if the word is a food, find it's category
+    if food_name is not '':
+        category = categorize(food_name)
+    # else, assign it to Other
+    else:
+        category = 'Other'
+
+    # pull the category from the database
+    if category is None or category is 'Other':
+        primary_category = Category.query.filter_by(name="Other").first()
+    else:
+        primary_category = Category.query.filter_by(name=category).first()
+
+    return(primary_category.id)
+
+''' ===========================================================================================
+PAGE list : displays the selected list, form to enter url to scrape recipe web pages
+=========================================================================================== '''
 @app.route("/mylists/list/<list_id>", methods= ['GET','POST'])
 def list(list_id):
+    # redirect if user not logged in
     if current_user.is_authenticated == False:
         flash(f'Please login', 'info')
         return redirect(url_for('login'))
 
     # load list
-    list_data = List.query.filter_by(id=list_id).first()
+    list_data = Shopping_List.query.filter_by(id=list_id).first()
 
     # To add list items in manually
     additional_item = AdditionalListItem()
@@ -208,7 +240,7 @@ def list(list_id):
         db.session.add(new_item)
         db.session.commit()
 
-    # BEGIN RECIPE WEB SCRAPING
+    # To add list items with a url
     form = EnterRecipe()
     if form.validate_on_submit and form.submit.data and request.method == 'POST':
         try:
@@ -219,7 +251,6 @@ def list(list_id):
             title = soup.title.string
 
             ld_json = soup.find("script", {"type" : "application/ld+json"}) # METHOD 1: parse for JSON-LD
-
             if ld_json is not None:
                 # if recipeIngredient not found in first block of script, then search next
                 failsafe = 0;
@@ -248,54 +279,7 @@ def list(list_id):
                 # pull each item from dictionary
                 for ele in recipe_list:
                     get_category = assign_category(ele)
-                    # ******************* begin categorizing *******************
-                    # tokenize ingredient to pick out which words are foods
-                    words = word_tokenize(ele)
-
-                    # filter stop words (of, the, a, ...)
-                    include_stop_words = set()
-                    include_stop_words.add('can')
-                    stop_words = set(stopwords.words('english')) - include_stop_words
-                    words_filtered = []
-                    for w in words:
-                        if w not in stop_words:
-                            words_filtered.append(w)
-
-                    # get synset of each word and store in list
-                    synset_list = []
-                    for w in words_filtered:
-                        syn = set()
-                        syn = wn.synsets(w)
-                        if len(syn) > 0:
-                            synset_list.append(syn[0])
-                        #print(syn.name())
-                        #print(syn.definition())
-
-                    primary_category = 'Other'
-
-                    categories_list = []
-                    for s in synset_list:
-                        print(s.definition())
-                        categories_list.append(categorize(s))
-
-                    # some categories will precede others, choose highest
-                    categories = ''.join(categories_list)
-                    if 'Canned Goods' in categories:
-                        primary_category = 'Canned Goods'
-                    elif 'Frozen Foods' in categories:
-                        primary_category = 'Frozen Foods'
-                    else:
-                        for c in categories_list: # ['Other','Produce', 'Other']
-                            if c != 'Other':
-                                primary_category = c
-                                break
-                            else:
-                                primary_category = c
-
-                    get_category = Category.query.filter_by(name=primary_category).first()
-                    # ******************* end categorizing *******************
-
-                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category.id) #store
+                    item = Item(name=ele, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category) #store
                     db.session.add(item)
                     db.session.commit()
             else:
@@ -309,54 +293,9 @@ def list(list_id):
 
                 recipe_list = soup.findAll("li", itemprop=re.compile("\w*([Ii]ngredient)\w*"))
 
-                for ele in recipe_list:
-                    # ******************* begin categorizing *******************
-                    # tokenize ingredient to pick out which words are foods
-                    words = word_tokenize(ele)
-
-                    # filter stop words (of, the, a, ...)
-                    include_stop_words = set()
-                    include_stop_words.add('can')
-                    stop_words = set(stopwords.words('english')) - include_stop_words
-                    words_filtered = []
-                    for w in words:
-                        if w not in stop_words:
-                            words_filtered.append(w)
-
-                    # get synset of each word and store in list
-                    synset_list = []
-                    for w in words_filtered:
-                        syn = set()
-                        syn = wn.synsets(w)
-                        if len(syn) > 0:
-                            synset_list.append(syn[0])
-                        #print(syn.name())
-                        #print(syn.definition())
-
-                    primary_category = 'Other'
-
-                    categories_list = []
-                    for s in synset_list:
-                        #print(s.definition())
-                        categories_list.append(categorize(s))
-
-                    # some categories will precede others, choose highest
-                    categories = ''.join(categories_list)
-                    if 'Canned Goods' in categories:
-                        primary_category = 'Canned Goods'
-                    elif 'Frozen Foods' in categories:
-                        primary_category = 'Frozen Foods'
-                    else:
-                        for c in categories_list: # ['Other','Produce', 'Other']
-                            if c != 'Other':
-                                primary_category = c
-                                break
-                            else:
-                                primary_category = c
-
-                    get_category = Category.query.filter_by(name="Other").first()  #change back to primary_category
-                    # ******************* end categorizing *******************
-                    item = Item(name=ele.text, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category.id) #store
+                for itemprop in recipe_list:
+                    get_category = assign_category(itemprop.text)
+                    item = Item(name=itemprop.text, user=current_user, list_id=list_id, recipe_id=recipe_data.id, category_id=get_category) #store
                     db.session.add(item)
                     db.session.commit()
 
@@ -367,26 +306,26 @@ def list(list_id):
             print(e)
             flash(f'Cannot obtain ingredients from {form.recipe_url.data}', 'danger')
 
+    # get all list items
     items = []
     items = Item.query.filter_by(list_id=list_id).all()
 
+    # get all recipes in this list
     recipes = []
     for i in items:
         find_recipe = Recipe.query.filter_by(id=i.recipe_id).first()
         if find_recipe not in recipes:
             recipes.append(find_recipe)
 
-    # DELETING RECIPES
+    # delete recipe form
     delete_recipe = DeleteRecipe()
     delete_recipe.selected_recipe.choices = recipes #populate drop-down form
 
     return render_template('list.html', form=form, items=items, delete_recipe=delete_recipe, list_id=list_id, list = list_data, additional_item=additional_item)
 
-    # END RECIPE WEB SCRAPING
-
-''' ------------------------------------------------------------
-DELETE RECIPE
---------------------------------------------------------------- '''
+''' ===========================================================================================
+PAGE delete : deletes selected recipe and reroutes back to list page
+=========================================================================================== '''
 @app.route("/delete", methods= ['GET','POST'])
 def delete():
     recipe_id = request.form.get('recipe')
@@ -399,9 +338,9 @@ def delete():
     flash(f'Deleted recipe', 'success')
     return redirect(url_for('list', list_id=list))
 
-''' ------------------------------------------------------------
-CALENDAR
---------------------------------------------------------------- '''
+''' ===========================================================================================
+PAGE calendar : organizes recipes with selected times
+=========================================================================================== '''
 import dateutil
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
@@ -412,6 +351,11 @@ def _jinja2_filter_datetime(date, fmt=None):
 
 @app.route("/calendar")
 def calendar():
+    # redirect if not logged in
+    if current_user.is_authenticated == False:
+        flash(f'Please login', 'info')
+        return redirect(url_for('login'))
+
     select_form = SelectRecipe()
     recipes = []
     recipes_with_dates = []

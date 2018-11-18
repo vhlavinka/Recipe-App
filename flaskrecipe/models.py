@@ -12,7 +12,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
-    lists = db.relationship('List', backref='user', lazy=True)
+    lists = db.relationship('Grocerylist', backref='user', lazy=True)
     filters = db.relationship('Filter_Item', backref='user', lazy=True)
     recipes = db.relationship('Recipe', backref='user', lazy=True)
     def __repr__(self):
@@ -23,7 +23,7 @@ class Item(db.Model):
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=True) # does not have to belond to a recipe
-    list_id = db.Column(db.Integer, db.ForeignKey('list.id'), nullable=False)
+    list_id = db.Column(db.Integer, db.ForeignKey('grocerylist.id'), nullable=False)
     checked = db.Column(db.Integer, default=0)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False, default=1)
     # one to one with Recipe_Ingredients
@@ -33,7 +33,7 @@ class Item(db.Model):
     def __repr__(self):
         return f"Item('{self.id}', '{self.name}','{self.recipe_id}')"
 
-class List(db.Model):
+class Grocerylist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     list_title = db.Column(db.String(200))

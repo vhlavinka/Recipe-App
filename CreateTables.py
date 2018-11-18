@@ -7,7 +7,7 @@ $ python3 CreateTables.py
 Re-create users on front end
 ================================================================ '''
 from flaskrecipe import db
-from flaskrecipe.models import User, Item, List, Recipe, Category, Filter_Item
+from flaskrecipe.models import User, Item, Grocerylist, Recipe, Category, Filter_Item
 
 # create all tables
 db.create_all()
