@@ -1,6 +1,6 @@
 from flask import render_template, url_for, flash, redirect, request, session
 from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm, SelectRecipe
-from flaskrecipe.models import User, Item, Shopping_List, Recipe, Category, Filter_Item
+from flaskrecipe.models import User, Item, Grocerylist, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
 from bs4 import BeautifulSoup
@@ -19,7 +19,7 @@ PAGE home : summary of how to get started and create a new list here
 def home():
     form = NewListForm()
     if form.validate_on_submit() and current_user.is_authenticated:
-        new_list = Shopping_List(user=current_user, list_title=form.list_title.data)
+        new_list = Grocerylist(user=current_user, list_title=form.list_title.data)
         db.session.add(new_list)
         db.session.commit()
         return redirect(url_for('mylists'))
@@ -101,7 +101,7 @@ def mylists():
     filters = []
     lists = []
     try:
-        lists = Shopping_List.query.filter_by(user_id=current_user.id).all()
+        lists = Grocerylist.query.filter_by(user_id=current_user.id).all()
         filters = Filter_Item.query.filter_by(user_id=current_user.id).all()
 
     except:
@@ -112,7 +112,7 @@ def mylists():
 FUNCTION categorize : assigns a category to an ingredient
 =========================================================================================== '''
 # used in def list to categorize items
-def categorize(s):
+def categorize(syn):
     s = wn.synsets(syn)
     if len(s) > 0:
         s = s[0]
@@ -177,7 +177,12 @@ def assign_category(ele):
 
     # create list of foods from synset
     food = wn.synset('foodstuff.n.02')
-    foods = list(set([w for s in food.closure(lambda s:s.hyponyms()) for w in s.lemma_names()]))
+    #foods = list(set([w for s in food.closure(lambda s:s.hyponyms()) for w in s.lemma_names()]))
+    foods = []
+    for s in food.closure(lambda s:s.hyponyms()):
+        for w in s.lemma_names():
+            foods.append(w)
+
 
     found_flag = False   # which statement to print
     food_name = ''       # the name of the food found, some names are compound i.e. vanilla_extract
@@ -230,7 +235,7 @@ def list(list_id):
         return redirect(url_for('login'))
 
     # load list
-    list_data = Shopping_List.query.filter_by(id=list_id).first()
+    list_data = Grocerylist.query.filter_by(id=list_id).first()
 
     # To add list items in manually
     additional_item = AdditionalListItem()
