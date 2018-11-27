@@ -10,6 +10,8 @@ from nltk.corpus import wordnet as wn
 import requests
 import json
 import re
+from datetime import datetime
+import dateutil
 
 ''' ===========================================================================================
 PAGE home : summary of how to get started and create a new list here
@@ -346,7 +348,6 @@ def delete():
 ''' ===========================================================================================
 PAGE calendar : organizes recipes with selected times
 =========================================================================================== '''
-import dateutil
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
     if date is None:
@@ -354,7 +355,7 @@ def _jinja2_filter_datetime(date, fmt=None):
     format='%b %d, %Y'
     return date.strftime(format)
 
-@app.route("/calendar")
+@app.route("/calendar", methods = ['GET','POST'])
 def calendar():
     # redirect if not logged in
     if current_user.is_authenticated == False:
@@ -369,6 +370,23 @@ def calendar():
         recipes_with_dates = Recipe.query.filter(User.id==current_user.id, Recipe.plan_date != None).all()
     except Exception as e:
         print(e)
+
+    if select_form.validate_on_submit and select_form.submit.data and request.method == 'POST':
+
+        # get the time for the recipe
+        recipe_datetime = request.form.get('meal-time')
+
+        # query the recipe
+        recipe_id = request.form.get('recipe')
+        get_recipe = Recipe.query.filter(Recipe.id==recipe_id, Recipe.user_id==current_user.id).first()
+        print(get_recipe.name)
+        # modify the recipe by setting it to the chosen time
+        get_recipe.plan_date = datetime.strptime(recipe_datetime, "%Y-%m-%dT%H:%M")
+
+        # commit the changes
+        db.session.commit()
+
+        flash(f'Added recipe', 'success')
 
     select_form.selected_recipe.choices = recipes
     return render_template('calendar.html', select_form=select_form, recipes=recipes, recipes_with_dates=recipes_with_dates)

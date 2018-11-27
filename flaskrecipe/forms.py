@@ -49,4 +49,4 @@ class FilterItemForm(FlaskForm):
 
 class SelectRecipe(FlaskForm):
     selected_recipe = SelectField(u'Recipes',coerce=int)
-    submit = SubmitField('Select Recipe')
+    submit = SubmitField('Add Recipe')

@@ -2,9 +2,9 @@
 {% block content %}
 <div class="container">
 
-<h2>Agenda</h2>
+<h2>Meal Planning Calendar</h2>
     <p class="lead">
-        This agenda viewer will let you see multiple events cleanly!
+        Plan your meals by selecting recipes, choosing a date and time, and adding them to the calendar.
     </p>
     <hr />
 
@@ -48,7 +48,7 @@
   <div class="content-section">
     <h5>ADD RECIPE</h5>
     <p class='text-muted'> Assign saved recipes to your calendar</p>
-      <form method="POST" action="{{ url_for('delete') }} ">
+      <form method="POST" action="">
         <input type="hidden" name="list" value="{{ list_id }}">
         <div class="form-group">
           <label for="sel1">Recipes:</label>
@@ -59,25 +59,14 @@
             {% endfor %}
           </select>
         </div>
+        <label for="meal-time">Choose Meal Time:</label>
+        <input type="datetime-local" id="meal-time"
+          name="meal-time" value="2018-06-12T19:30"
+          min="2018-01-01T00:00" max="2099-12-31T00:00">
         <div class="form-group">
           {{ select_form.submit(class="btn btn-outline-secondary") }}
         </div>
       </form>
-
-              <div class="form-group">
-                  <div class='input-group date' id='datetimepicker1'>
-                      <input type='text' class="form-control" />
-                      <span class="input-group-addon">
-                          <span class="glyphicon glyphicon-calendar"></span>
-                      </span>
-              <script type="text/javascript">
-                  $(function () {
-                      $('#datetimepicker1').datetimepicker();
-                  });
-              </script>
-          </div>
-      </div>
-      
   </div>
 </div>
 {% endblock sidebar %}
