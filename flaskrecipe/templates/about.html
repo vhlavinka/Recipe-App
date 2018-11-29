@@ -1,4 +1,15 @@
 {% extends "layout.html" %}
 {% block content %}
-  <h1>About Page</h1>
+<div class="content-section">
+  <br>
+  <h3>ABOUT</h3>
+  <br>
+  <p>
+    Recipe List Generator is an application that allows you to compile your favorites recipes into
+    one organized list.
+    <br><br>
+    This web app was designed for an independent project at West Chester University of Pennsylvania.
+  </p>
+  <img align="center" height=200 width= 200 src="{{ url_for('static', filename='wcuSeal.png') }}" >
+</div>
 {% endblock content%}

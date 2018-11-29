@@ -94,11 +94,25 @@ def recipe(recipe_id):
 
 @app.route("/mylists", methods= ['GET','POST'])
 def mylists():
+    # redirect if user not logged in
+    if current_user.is_authenticated == False:
+        flash(f'Please login', 'info')
+        return redirect(url_for('login'))
+
     filter_form = FilterItemForm()
     if filter_form.validate_on_submit and filter_form.submit.data and request.method == 'POST':
         new_filter = Filter_Item(name=filter_form.filter_item.data,user_id=current_user.id)
         db.session.add(new_filter)
         db.session.commit()
+
+    form = NewListForm()
+    if form.validate_on_submit() and form.submit.data and current_user.is_authenticated:
+        new_list = Grocerylist(user=current_user, list_title=form.list_title.data)
+        db.session.add(new_list)
+        db.session.commit()
+        return redirect(url_for('mylists'))
+    if current_user.is_authenticated == False:
+        flash(f'Please login first to create a list', 'info')
 
     filters = []
     lists = []
@@ -108,7 +122,7 @@ def mylists():
 
     except:
         flash(f'No lists have been created yet.', 'info')
-    return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form)
+    return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form, form=form)
 
 ''' ===========================================================================================
 FUNCTION categorize : assigns a category to an ingredient
@@ -209,7 +223,6 @@ def assign_category(ele):
                     food_name = f
                     found_flag = True
                     break
-
 
     # if the word is a food, find it's category
     if food_name is not '':
@@ -313,9 +326,19 @@ def list(list_id):
             print(e)
             flash(f'Cannot obtain ingredients from {form.recipe_url.data}', 'danger')
 
+    # get filtered_items
+    filtered_items = []
+    filtered_items = Filter_Item.query.filter_by(user_id=current_user.id).all()
+
     # get all list items
     items = []
     items = Item.query.filter_by(list_id=list_id).all()
+
+    for item in items:
+        for fi in filtered_items:
+            if item.name == fi.name:
+                items.remove(item)
+                break
 
     # get all recipes in this list
     recipes = []
@@ -367,7 +390,7 @@ def calendar():
     recipes_with_dates = []
     try:
         recipes = Recipe.query.filter(User.id==current_user.id).all()
-        recipes_with_dates = Recipe.query.filter(User.id==current_user.id, Recipe.plan_date != None).all()
+        recipes_with_dates = Recipe.query.filter(User.id==current_user.id, Recipe.plan_date != None).order_by(Recipe.plan_date.desc()).all()
     except Exception as e:
         print(e)
 
@@ -387,6 +410,7 @@ def calendar():
         db.session.commit()
 
         flash(f'Added recipe', 'success')
+        return redirect(url_for('calendar'))
 
     select_form.selected_recipe.choices = recipes
     return render_template('calendar.html', select_form=select_form, recipes=recipes, recipes_with_dates=recipes_with_dates)

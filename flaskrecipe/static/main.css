@@ -1,15 +1,18 @@
 @import url('https://fonts.googleapis.com/css?family=Avenir:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i');
 @import url('https://fonts.googleapis.com/css?family=Yellowtail');
 body {
-  background: #fafafa;
+  background: #d8d7d2;
   color: #333333;
-  margin-top: 6.5rem;
+  margin-top: 5.3rem;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6{
   color: #3b3d42;
   font-family: "Avenir", sans-serif;
+}
 
+h6 {
+  font-weight: bold;
 }
 
 .carousel-caption p{
@@ -17,7 +20,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .bg-steel {
-  background-color: #3b3d42
+  background-color: #3b3d42;
 }
 
 .site-header .navbar-brand{
@@ -86,15 +89,13 @@ a.article-title:hover {
   vertical-align: middle;
 }
 
-.account-img {
-  height: 125px;
-  width: 125px;
-  margin-right: 20px;
-  margin-bottom: 16px;
-}
-
 .account-heading {
   font-size: 2.5rem;
+}
+
+/* List items */
+.strikethrough:checked + span{
+  text-decoration:line-through
 }
 
 /* Buttons */
@@ -123,7 +124,7 @@ a.article-title:hover {
 
 
 /* Events */
-.agenda .agenda-events {  }
+.agenda .agenda-events { }
 .agenda .agenda-events .agenda-event {  }
 
 @media (max-width: 767px) {
@@ -133,14 +134,15 @@ a.article-title:hover {
 /* Datetime Picker*/
 label {
     display: block;
-    font: 1rem 'Fira Sans', sans-serif;
+    color: #3b3d42;
+    font-family: "Avenir", sans-serif;
 }
-
+/*
 input,
 label {
     margin: .4rem 0;
 }
-
+*/
 .note {
     font-size: .8em;
 }
