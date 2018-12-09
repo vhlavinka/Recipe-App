@@ -31,6 +31,9 @@ class NewListForm(FlaskForm):
     list_title = StringField('List Name', validators=[DataRequired()])
     submit = SubmitField('Create List')
 
+class DeleteListForm(FlaskForm):
+    delete_list = SubmitField('Delete List(s)')
+
 class EnterRecipe(FlaskForm):
     recipe_url = StringField('Recipe URL', validators=[DataRequired()])
     submit = SubmitField('Get Ingredients')
@@ -48,7 +51,7 @@ class FilterItemForm(FlaskForm):
     submit_filter = SubmitField('Submit')
 
 class DeleteFilterForm(FlaskForm):
-    delete_filter = SubmitField('Remove Filters')
+    delete_filter = SubmitField('Remove Filter(s)')
 
 class SelectRecipe(FlaskForm):
     selected_recipe = SelectField(u'Recipes',coerce=int)

@@ -1,21 +1,19 @@
 {% extends "layout.html" %}
 {% block content %}
-<script>
-
-  $(".deleteMe").on("click", function(){
-     $(this).closest("li").remove();
-  });
-
-</script>
 <div class="content-section">
   <legend class="border-bottom mb-4">MY LISTS</legend>
+  <form method="POST" action="">
   <ul>
     {% for list in lists %}
-        <li>
+        <li><input type="checkbox" name = "checklist" value="{{list.id}}">
             <a class="mr-2" href="/mylists/list/{{list.id}}">{{ list.list_title }}</a>
         </li>
     {% endfor %}
   </ul>
+  <div class="form-group">
+    {{ delete_list_form.delete_list(class="btn btn-outline-danger") }}
+  </div>
+  </form>
 </div>
 <div class="content-section">
   <form method="POST" action="">
@@ -37,16 +35,21 @@
 <div class="col-md-4">
   <div class="content-section">
     <h5>FILTER INGREDIENTS</h5>
-    <p class='text-muted'> Manage filtered items
-      <ul class="list-group">
-        {% for filter in filters %}
-        <li class="list-group-item list-group-item-light">
-          <input type="checkbox" name = "check">
-          {{ filter.name }}
-        </li>
-      </ul>
-      {% endfor %}
-    </p>
+    <form method="POST" action="">
+      <p class='text-muted'> Manage filtered items
+        <ul class="list-group">
+          {% for filter in filters %}
+          <li class="list-group-item list-group-item-light">
+            <input type="checkbox" name = "check" value="{{filter.name}}">
+            {{ filter.name }}
+          </li>
+        </ul>
+        {% endfor %}
+      </p>
+      <div class="form-group">
+        {{ delete_filter_form.delete_filter(class="btn btn-outline-danger") }}
+      </div>
+    </form>
     <form method="POST" action="">
       {{ filter_form.hidden_tag() }}
       <fieldset class="form-group">
@@ -57,7 +60,6 @@
       </fieldset>
       <div class="form-group">
         {{ filter_form.submit_filter(class="btn btn-outline-secondary") }}
-        {{ delete_filter_form.delete_filter(class="btn btn-outline-danger") }}
       </div>
     </form>
   </div>

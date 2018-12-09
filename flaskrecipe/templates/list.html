@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
+<div id="overlay" onclick="off()">
+    <div id="text">Gathering Ingredients ...<br><br><br>
+    <div id="smalltext" align="center">This may take a few minutes.</div></div>
+</div>
 <div class="content-section">
   <legend class="border-bottom mb-4">{{ list.list_title }}</legend>
   <h6>Canned & Dry Goods</h6>
@@ -111,7 +115,7 @@
           </div>
       </fieldset>
       <div class="form-group">
-        {{ form.submit(class="btn btn-outline-secondary") }}
+        {{ form.submit(class="btn btn-outline-secondary", onclick="on()") }}
       </div>
     </form>
     <br>
@@ -133,4 +137,13 @@
     </form>
   </div>
 </div>
+<script>
+  function on() {
+      document.getElementById("overlay").style.display = "block";
+  }
+
+  function off() {
+      document.getElementById("overlay").style.display = "none";
+  }
+</script>
 {% endblock sidebar%}

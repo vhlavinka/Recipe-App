@@ -1,5 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, session
-from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm, SelectRecipe,DeleteFilterForm
+from flaskrecipe.forms import *
 from flaskrecipe.models import User, Item, Grocerylist, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
@@ -100,6 +100,7 @@ def mylists():
         flash(f'Please login', 'info')
         return redirect(url_for('login'))
 
+    # form for adding items that the user wants to filter
     filter_form = FilterItemForm()
     if filter_form.validate_on_submit and filter_form.submit_filter.data and request.method == 'POST':
         if filter_form.data is not None:
@@ -107,16 +108,46 @@ def mylists():
             db.session.add(new_filter)
             db.session.commit()
 
+    # form for deleting filtered items from list
     delete_filter_form = DeleteFilterForm()
-    delete_filters = request.form.getlist('check')
-    print(delete_filters)
+    if delete_filter_form.validate_on_submit and delete_filter_form.delete_filter.data and request.method == 'POST':
+        delete_filters = request.form.getlist('check')
+        delete_filter_query = Filter_Item.query.filter(Filter_Item.name.in_(delete_filters)).filter(Filter_Item.user_id == current_user.id).all()
+        for dfq in delete_filter_query:
+            Filter_Item.query.filter(Filter_Item.id == dfq.id).delete()
+        db.session.commit()
 
+    # form for creating a new list
     form = NewListForm()
     if form.validate_on_submit() and form.submit.data and current_user.is_authenticated and request.method =='POST':
         new_list = Grocerylist(user=current_user, list_title=form.list_title.data)
         db.session.add(new_list)
         db.session.commit()
-        return redirect(url_for('mylists'))
+        return redirect(url_for('list', list_id=new_list.id))
+
+    # form for deleting LISTS
+    delete_list_form = DeleteListForm()
+    if delete_list_form.validate_on_submit and delete_list_form.delete_list.data and current_user.is_authenticated and request.method =='POST':
+        delete_lists = request.form.getlist('checklist')
+        delete_list_query = Grocerylist.query.filter(Grocerylist.id.in_(delete_lists)).filter(Grocerylist.user_id == current_user.id).all()
+
+        # temporarily store list_id
+        list_ids = []
+
+        # delete each checked list
+        for dlq in delete_list_query:
+            list_ids.append(dlq.id)
+            Grocerylist.query.filter(Grocerylist.id == dlq.id).delete()
+            db.session.commit()
+
+        # delete items associated with list as well
+        print(list_ids)
+        for lid in list_ids:
+            delete_items_query = Item.query.filter(Item.list_id==lid).all()
+            print(delete_items_query)
+            for diq in delete_items_query:
+                Item.query.filter(Item.id == diq.id).delete()
+                db.session.commit()
 
     filters = []
     lists = []
@@ -127,7 +158,7 @@ def mylists():
         flash(f'No lists have been created yet.', 'info')
 
     return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form,
-    delete_filter_form = delete_filter_form, form=form)
+    delete_filter_form = delete_filter_form, delete_list_form=delete_list_form, form=form)
 
 ''' ===========================================================================================
 FUNCTION categorize : assigns a category to an ingredient
@@ -153,18 +184,18 @@ def categorize(syn):
         category = 'Canned Goods'
     elif 'frozen' in s.name():
         category = 'Frozen Foods'
-    elif any(x in s.definition() for x in meats):
-        category = 'Meat'
     elif any(x in s.definition() for x in baking):
         category = 'Cooking/Baking'
-    elif any(x in s.definition() for x in bakery):
-        category = 'Bakery'
-    elif any(x in s.definition() for x in beverages):
-        category = 'Beverages'
     elif any(x in s.definition() for x in produce):
         category = 'Produce'
     elif any(x in s.definition() for x in dairy):
         category = 'Dairy/Eggs'
+    elif any(x in s.definition() for x in meats):
+        category = 'Meat'
+    elif any(x in s.definition() for x in bakery):
+        category = 'Bakery'
+    elif any(x in s.definition() for x in beverages):
+        category = 'Beverages'
     else:
         category = 'Other'
 
@@ -181,10 +212,12 @@ def assign_category(ele):
     # filter out stop words (of, the, a, ...)
     include_stop_words = set()
     include_stop_words.add('can')
+    measurements = set(["tsp", "tbsp","cup", "cups", "teaspoon", "teaspoons", "tablespoon",
+                        "tablespoons", "quart", "quarts", "pint", "pints", "ounce", "ounces"])
     stop_words = set(stopwords.words('english')) - include_stop_words
     words_filtered = []
     for w in words:
-        if w not in stop_words:
+        if w not in stop_words and w not in measurements:
             words_filtered.append(w)
 
     # remove numeric values
@@ -302,6 +335,14 @@ def assign_category(ele):
 ''' ===========================================================================================
 PAGE list : displays the selected list, form to enter url to scrape recipe web pages
 =========================================================================================== '''
+class Error(Exception):
+   """Base class for other exceptions"""
+   pass
+
+class InvalidURLError(Error):
+    """Please enter a valid URL"""
+    pass
+
 @app.route("/mylists/list/<list_id>", methods= ['GET','POST'])
 def list(list_id):
     # redirect if user not logged in
@@ -324,13 +365,25 @@ def list(list_id):
     form = EnterRecipe()
     if form.validate_on_submit and form.submit.data and request.method == 'POST':
         try:
+            # get url posted to form
             url = form.recipe_url.data
-            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-            r = requests.get(url, headers = headers)
-            soup = BeautifulSoup(r.text,'html5lib')
-            title = soup.title.string
 
-            ld_json = soup.find("script", {"type" : "application/ld+json"}) # METHOD 1: parse for JSON-LD
+            # check if url is valid
+            valid_url = re.compile("^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$")
+            if not re.search(valid_url, url):
+                raise InvalidURLError
+
+            # some websites require headers to make a request
+            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+
+            # make request to url
+            r = requests.get(url, headers = headers)
+
+            # parse html with bs4
+            soup = BeautifulSoup(r.text,'html5lib')
+
+            # METHOD 1: parse for JSON-LD
+            ld_json = soup.find("script", {"type" : "application/ld+json"})
             if ld_json is not None:
                 # if recipeIngredient not found in first block of script, then search next
                 failsafe = 0;
@@ -341,11 +394,12 @@ def list(list_id):
                 # parse out html tags
                 ld_json = re.sub(r"<[^>]*>", "", ld_json.string)
 
-                # decode JSON
+                # get the JSON, make sure it is in correct format
                 items_dict = json.loads(ld_json)
                 if ld_json.startswith('[') and ld_json.endswith(']'):
                     items_dict = items_dict[1]
 
+                # search the JSON for ingredients
                 recipe_list = items_dict["recipeIngredient"]
                 recipe_title = soup.title.string
                 if recipe_title is None:
@@ -371,7 +425,7 @@ def list(list_id):
                 db.session.add(recipe_data)
                 db.session.commit()
 
-                recipe_list = soup.findAll("li", itemprop=re.compile("\w*([Ii]ngredient)\w*"))
+                recipe_list = soup.findAll(["li","span"], itemprop=re.compile("\w*([Ii]ngredient)\w*"))
 
                 for itemprop in recipe_list:
                     get_category = assign_category(itemprop.text)
@@ -381,6 +435,8 @@ def list(list_id):
 
             # Success if we got to here
             flash(f'Ingredients obtained from {form.recipe_url.data}', 'success')
+        except InvalidURLError:
+            flash(f'Please enter a valid URL', 'danger')
         except Exception as e:
             print("EXCEPTION")
             print(e)
