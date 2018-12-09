@@ -1,5 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, session
-from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm, SelectRecipe
+from flaskrecipe.forms import RegistrationForm, LoginForm, NewListForm, EnterRecipe, DeleteRecipe, AdditionalListItem, FilterItemForm, SelectRecipe,DeleteFilterForm
 from flaskrecipe.models import User, Item, Grocerylist, Recipe, Category, Filter_Item
 from flaskrecipe import app, db, bcrypt
 from flask_login import login_user, logout_user, current_user, login_required
@@ -25,8 +25,9 @@ def home():
         db.session.add(new_list)
         db.session.commit()
         return redirect(url_for('mylists'))
-    if current_user.is_authenticated == False:
-        flash(f'Please login first to create a list', 'info')
+    if form.validate_on_submit() and current_user.is_authenticated == False:
+        flash(f'Please register or login first to create a list', 'info')
+        return redirect(url_for('register'))
 
     return render_template('home.html', form=form)
 
@@ -100,29 +101,33 @@ def mylists():
         return redirect(url_for('login'))
 
     filter_form = FilterItemForm()
-    if filter_form.validate_on_submit and filter_form.submit.data and request.method == 'POST':
-        new_filter = Filter_Item(name=filter_form.filter_item.data,user_id=current_user.id)
-        db.session.add(new_filter)
-        db.session.commit()
+    if filter_form.validate_on_submit and filter_form.submit_filter.data and request.method == 'POST':
+        if filter_form.data is not None:
+            new_filter = Filter_Item(name=filter_form.filter_item.data,user_id=current_user.id)
+            db.session.add(new_filter)
+            db.session.commit()
+
+    delete_filter_form = DeleteFilterForm()
+    delete_filters = request.form.getlist('check')
+    print(delete_filters)
 
     form = NewListForm()
-    if form.validate_on_submit() and form.submit.data and current_user.is_authenticated:
+    if form.validate_on_submit() and form.submit.data and current_user.is_authenticated and request.method =='POST':
         new_list = Grocerylist(user=current_user, list_title=form.list_title.data)
         db.session.add(new_list)
         db.session.commit()
         return redirect(url_for('mylists'))
-    if current_user.is_authenticated == False:
-        flash(f'Please login first to create a list', 'info')
 
     filters = []
     lists = []
     try:
         lists = Grocerylist.query.filter_by(user_id=current_user.id).all()
         filters = Filter_Item.query.filter_by(user_id=current_user.id).all()
-
     except:
         flash(f'No lists have been created yet.', 'info')
-    return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form, form=form)
+
+    return render_template('mylists.html', lists=lists, filters=filters, filter_form=filter_form,
+    delete_filter_form = delete_filter_form, form=form)
 
 ''' ===========================================================================================
 FUNCTION categorize : assigns a category to an ingredient
@@ -185,11 +190,14 @@ def assign_category(ele):
     # remove numeric values
     reg_spec_chars = re.compile("[-!$%^&*()_+|~=`{}\[\]:;<>?,.\/]")             # find special characters
     reg_quantity = re.compile("[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*")  # find integers and fractions
+    reg_parentheses = re.compile("\((.*?)\)")   # find words between parentheses
     for w in words_filtered:
         if re.search(reg_quantity, w):
             words_filtered.remove(w)        # remove numbers
         elif re.search(reg_spec_chars,w):
             words_filtered.remove(w)        # remove special characters
+        elif re.search(reg_parentheses,w):
+            words_filtered.remove(w)
 
     # create list of foods from synset
     food = wn.synset('foodstuff.n.02')
@@ -224,12 +232,64 @@ def assign_category(ele):
                     found_flag = True
                     break
 
+    # let the default category be other
+    category = 'Other'
+
     # if the word is a food, find it's category
     if food_name is not '':
         category = categorize(food_name)
     # else, assign it to Other
     else:
-        category = 'Other'
+        # using this api is very slow which is why it is used as a back up method
+        nbd_key = 'cH6ecteE92SztSSisswTdibM8u5oQsasNKYDhN77'
+        ingredient_phrase = '+'.join(words_filtered)
+        ndb_url = 'https://api.nal.usda.gov/ndb/search/?format=json&q='+ingredient_phrase+'&ds=Standard%20Reference&max=1&offset=0&api_key='+nbd_key
+        ndb_content = requests.get(ndb_url)
+        ndb_dict = json.loads(ndb_content.text)
+
+        nbd_group = ''
+        for key, value in ndb_dict.items():
+            if key != 'errors':
+                nbd_group = ndb_dict['list']['item'][0]['group']
+
+        # try to categorize individual words rather than whole phrase
+        if nbd_group == '':
+            for w in words_filtered:
+                nbd_key = 'cH6ecteE92SztSSisswTdibM8u5oQsasNKYDhN77'
+                ndb_url = 'https://api.nal.usda.gov/ndb/search/?format=json&q=' + w + '&ds=Standard%20Reference&max=10&offset=0&api_key=' + nbd_key
+                ndb_content = requests.get(ndb_url)
+                ndb_dict = json.loads(ndb_content.text)
+
+                for key, value in ndb_dict.items():
+                    if key != 'errors':
+                        nbd_group = ndb_dict['list']['item'][0]['group']
+
+        if nbd_group == 'Dairy and Egg Products':
+            category = 'Dairy/Eggs'
+        elif nbd_group == 'Sausages and Luncheon Meats':
+            category = 'Meat'
+        elif nbd_group == 'Fruits and Fruit Juices':
+            category = 'Produce'
+        elif nbd_group == 'Vegetables and Vegetable Products':
+            category = 'Produce'
+        elif nbd_group == 'Spices and Herbs':
+            category = 'Cooking/Baking'
+        elif nbd_group == 'Cereal Grains and Pasta':
+            category = 'Canned/Dry Goods'
+        elif nbd_group == 'Legumes and Legume Products':
+            category = 'Canned/Dry Goods'
+        elif nbd_group == 'Soups, Sauces, and Gravies':
+            category = 'Canned/Dry Goods'
+        elif nbd_group == 'Sweets':
+            category = 'Cooking/Baking'
+        elif nbd_group == 'Fats and Oils':
+            category = 'Cooking/Baking'
+        elif nbd_group == 'Baked Products':
+            category = 'Bakery'
+        elif nbd_group == 'Poultry Products':
+            category = 'Meat'
+        else:
+            category = 'Other'
 
     # pull the category from the database
     if category is None or category is 'Other':
@@ -332,11 +392,11 @@ def list(list_id):
 
     # get all list items
     items = []
-    items = Item.query.filter_by(list_id=list_id).all()
+    items = Item.query.filter(Item.list_id==list_id).all()
 
     for item in items:
         for fi in filtered_items:
-            if item.name == fi.name:
+            if fi.name in item.name and fi.name != '':
                 items.remove(item)
                 break
 

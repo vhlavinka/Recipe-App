@@ -94,12 +94,19 @@ a.article-title:hover {
 }
 
 /* List items */
+span{
+  text-indent: 5em;
+}
 .strikethrough:checked + span{
   text-decoration:line-through
 }
 
 /* Buttons */
 .card, .btn, .form-control { border-radius: 0; }
+
+.deleteMe{
+    float: right;
+}
 
 /* Calendar CSS  */
 .agenda {  }

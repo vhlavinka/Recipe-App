@@ -14,7 +14,7 @@ db.create_all()
 
 # populate Category table with appropriate categories
 cat_1 = Category(name="Other")
-cat_2 = Category(name="Canned Goods")
+cat_2 = Category(name="Canned/Dry Goods")
 cat_3 = Category(name="Frozen Foods")
 cat_4 = Category(name="Meat")
 cat_5 = Category(name="Dairy/Eggs")
